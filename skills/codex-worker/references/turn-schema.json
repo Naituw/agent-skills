@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "status": {"type": "string", "enum": ["completed", "needs_input"]},
+    "message": {"type": "string"}
+  },
+  "required": ["status", "message"],
+  "additionalProperties": false
+}
