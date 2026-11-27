@@ -15,6 +15,7 @@ from codex_review import DEFAULT_TIMEOUT_SECS, ReviewError, codex_home, find_cod
 
 
 SCHEMA = Path(__file__).resolve().parent.parent / "references" / "turn-schema.json"
+SANDBOX_MODES = ("read-only", "workspace-write", "danger-full-access")
 TURN_INSTRUCTION = (
     "Use needs_input when you need information or a decision to continue, and say what you need. "
     "Otherwise use completed and summarize the result."
@@ -50,8 +51,10 @@ def run_turn(args, prompt, result, directory):
     events = directory / "events.jsonl"
     errors = directory / "stderr.log"
     final = directory / "result.json"
-    sandbox = "workspace-write" if args.write else "read-only"
+    sandbox = args.sandbox or ("workspace-write" if args.write else "read-only")
     argv = [find_codex(), "exec", "-s", sandbox]
+    for extra_dir in args.add_dirs:
+        argv += ["--add-dir", str(extra_dir.expanduser().resolve())]
     if args.thread_id:
         argv += ["resume", args.thread_id]
     if result["model"]:
@@ -109,7 +112,16 @@ def main():
     for command in ("start", "reply"):
         action = commands.add_parser(command)
         action.add_argument("--cd", type=Path, default=Path.cwd(), help="working directory")
-        action.add_argument("--write", action="store_true", help="allow workspace edits for this turn")
+        sandbox_group = action.add_mutually_exclusive_group()
+        sandbox_group.add_argument("--write", action="store_true", help="allow workspace edits for this turn")
+        sandbox_group.add_argument(
+            "--sandbox", choices=SANDBOX_MODES, default=None,
+            help="Codex sandbox policy for this turn (default: read-only)",
+        )
+        action.add_argument(
+            "--add-dir", dest="add_dirs", action="append", type=Path, default=[],
+            help="additional writable directory alongside --write (repeatable)",
+        )
         action.add_argument("--model", help="Codex model ID")
         action.add_argument("--effort", help="Codex reasoning effort")
         action.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECS, help="seconds to wait (0 = no limit)")
@@ -121,6 +133,9 @@ def main():
     args = parser.parse_args()
     if args.timeout < 0:
         parser.error("--timeout must be non-negative")
+    sandbox = args.sandbox or ("workspace-write" if args.write else "read-only")
+    if args.add_dirs and sandbox != "workspace-write":
+        parser.error("--add-dir requires workspace-write (--write or --sandbox workspace-write)")
     prompt = sys.stdin.read() if args.prompt == "-" else args.prompt
     result = {
         "status": "failed", "thread_id": args.thread_id,

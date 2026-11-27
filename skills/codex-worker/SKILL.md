@@ -10,7 +10,7 @@ Run these commands with a signed-in Codex CLI. Resolve script paths from this sk
 - Start a task with `python3 scripts/codex_worker.py start --cd DIR --model MODEL_ID --effort EFFORT "TASK"`. Choose the model and effort using the [model guidance](#model). Include the relevant scope and expected result.
 - Continue with `python3 scripts/codex_worker.py reply --cd DIR THREAD_ID "FOLLOW-UP"`. Use the returned directory and thread ID to answer a question or give Codex more work.
 
-Both commands default to read-only. Add `--write` on turns where Codex should edit the workspace. Each turn returns JSON with `thread_id`, `cwd`, `status` (`completed`, `needs_input`, or `failed`), and `message`.
+Both commands default to read-only. Add `--write` on turns where Codex should edit the workspace, plus repeatable `--add-dir DIR` for extra writable directories outside `--cd`. For turns that require host tools or system services blocked by `workspace-write` (e.g., `xcodebuild` / `CoreSimulator`), you may pass `--sandbox danger-full-access` explicitly on that turn; note that this lowers safety by removing sandbox isolation, so pass it only when strictly necessary and prefer read-only or `--write` (+ `--add-dir`) otherwise. Sandbox flags are per-turn and are not persisted across turns. Each turn returns JSON with `thread_id`, `cwd`, `status` (`completed`, `needs_input`, or `failed`), and `message`.
 
 ## Model
 
