@@ -7,3 +7,5 @@ Agent skills I use in my everyday work.
 ```sh
 npx skills add Naituw/agent-skills --skill codex-worker
 ```
+
+Optional Codex rule · [Avoid Speculative Defenses](rules/codex-avoid-speculative-defenses.md)
